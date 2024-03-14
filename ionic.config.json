@@ -1,0 +1,7 @@
+{
+  "name": "call-recording",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular-standalone"
+}
