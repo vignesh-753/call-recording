@@ -13,6 +13,3 @@ project(':capacitor-keyboard').projectDir = new File('../node_modules/@capacitor
 
 include ':capacitor-status-bar'
 project(':capacitor-status-bar').projectDir = new File('../node_modules/@capacitor/status-bar/android')
-
-include ':capacitor-plugin-incoming-call'
-project(':capacitor-plugin-incoming-call').projectDir = new File('../node_modules/capacitor-plugin-incoming-call/android')

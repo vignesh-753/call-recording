@@ -1,10 +1,9 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { IonHeader, IonToolbar, IonTitle, IonContent, IonButton } from '@ionic/angular/standalone';
-import { Media, MediaObject } from '@ionic-native/media/ngx';
-import { CallNumber } from "@ionic-native/call-number/ngx"
-import { CallDetector, PhoneState } from "capacitor-plugin-incoming-call";
 import { CommonModule } from '@angular/common';
-import { CallLog } from "@ionic-native/call-log/ngx";
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { AndroidPermissions } from '@awesome-cordova-plugins/android-permissions/ngx';
+import { CallNumber } from "@ionic-native/call-number/ngx";
+import { Media, MediaObject } from '@ionic-native/media/ngx';
+import { IonButton, IonContent, IonHeader, IonTitle, IonToolbar } from '@ionic/angular/standalone';
 
 declare var PhoneCallTrap: any;
 
@@ -25,50 +24,62 @@ export class HomePage implements OnInit {
   constructor(
     private media: Media,
     private call: CallNumber,
-
+    private androidPermissions: AndroidPermissions,
   ) { }
 
+  ngOnInit() {
 
-  async ngOnInit(): Promise<void> {
-
-    // CallDetector.detectCallState({ action: 'ACTIVATE' }).then(x => console.log(x)).catch(e => console.error(e));
-    // CallDetector.addListener('callStateChange', res => {
-    //   console.log('### Listening to callStateChange ###');
-    //   console.log(res);
-    //   this.status = res
-    // });
-    this.phonecalls()
-
-    this.file = this.media.create('/')
-
-    this.file.onStatusUpdate.subscribe(status => console.log(status)); // fires when file status changes
-
-    this.file.onSuccess.subscribe(() => console.log('Action is successful'));
-    const that = this;
-    this.file.onError.subscribe((error: any) => {
-      console.log('Error!', error)
-
-      if (error.code === 1) {
-        that.file.stop()
-      }
-    });
+    this.checkPermissions()
+    this.initPhoneCallStatus()
+    this.initCallRecorder()
   }
 
 
-  phonecalls() {
+  async checkPermissions() {
+    try {
+      const phoneStateResult = await this.androidPermissions.checkPermission(this.androidPermissions.PERMISSION.READ_PHONE_STATE)
+      if (!phoneStateResult.hasPermission) {
+        this.androidPermissions.requestPermission(this.androidPermissions.PERMISSION.READ_PHONE_STATE)
+      }
+
+      const callLogResult = await this.androidPermissions.checkPermission(this.androidPermissions.PERMISSION.READ_CALL_LOG)
+      if (!callLogResult.hasPermission) {
+        this.androidPermissions.requestPermission(this.androidPermissions.PERMISSION.READ_CALL_LOG)
+      }
+
+      const storageResult = await this.androidPermissions.checkPermission(this.androidPermissions.PERMISSION.WRITE_EXTERNAL_STORAGE)
+      if (!storageResult.hasPermission) {
+        this.androidPermissions.requestPermission(this.androidPermissions.PERMISSION.WRITE_EXTERNAL_STORAGE)
+      }
+
+    } catch (error) {
+      console.log('Error!', error)
+    }
+  }
+
+  private initCallRecorder() {
+    this.file = this.media.create('/')
+    this.file.onStatusUpdate.subscribe((status: any) => console.log(status)); // fires when file status changes
+    this.file.onSuccess.subscribe(() => console.log('Action is successful'));
+    this.file.onError.subscribe((error: any) => {
+      console.log('Error!', error)
+    });
+  }
+
+  private initPhoneCallStatus() {
     const that = this;
     PhoneCallTrap.onCall(function (state: string) {
-      alert(state);
 
       switch (state) {
         case "RINGING":
           console.log("Phone is ringing");
           break;
         case "OFFHOOK":
-          that.stopRecording()
+          that.startRecording()
           console.log("Phone is off-hook");
           break;
         case "IDLE":
+          that.stopRecording()
           console.log("Phone is idle");
           break;
       }
@@ -77,24 +88,25 @@ export class HomePage implements OnInit {
 
   async callNumber() {
     try {
-      await this.call.callNumber(this.phoneNumber.nativeElement.value, true)
-      this.startRecording()
+      // this.stopRecording()
+
+      const that = this;
+      setTimeout(async () => {
+
+        // that.startRecording()
+        await that.call.callNumber(that.phoneNumber.nativeElement.value, true)
+      }, 100);
+
     } catch (error) {
       console.log(error)
     }
   }
 
-  startRecording() {
-    // this.stopRecording()    this.file.stop();
-
+  private startRecording() {
     this.file.startRecord();
   }
 
-  stopRecording() {
+  private stopRecording() {
     this.file.stopRecord();
-  }
-
-  play() {
-    this.file.play()
   }
 }​​​​​
